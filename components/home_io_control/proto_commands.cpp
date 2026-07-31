@@ -80,7 +80,31 @@ bool create_execute(IoFrame &f, const uint8_t *own, const uint8_t *dst, bool low
   set_src(f, own);
   if (position <= POSITION_PERCENT_MAX) {
     const auto payload = make_position_payload(EXECUTE_ACEI, position);
-    return set_cmd(f, CMD_EXECUTE, payload.data(), payload.size());
+
+    ESP_LOGI(
+        "execute_trace",
+        "EXECUTE dst=%02X%02X%02X position=%u wire_position=0x%02X "
+        "low_power=%s payload=[%02X %02X %02X %02X %02X %02X %02X %02X]",
+        dst[0],
+        dst[1],
+        dst[2],
+        position,
+        static_cast<uint8_t>(2 * position),
+        low_power ? "YES" : "NO",
+        payload[0],
+        payload[1],
+        payload[2],
+        payload[3],
+        payload[4],
+        payload[5],
+        payload[6],
+        payload[7]);
+
+    return set_cmd(
+        f,
+        CMD_EXECUTE,
+        payload.data(),
+        payload.size());
   }
 
   // Special command (stop=0xD2, favorite=0xD8).
@@ -89,14 +113,41 @@ bool create_execute(IoFrame &f, const uint8_t *own, const uint8_t *dst, bool low
 }
 
 /// Build a position execute command (0x00) to move a device to a numeric position.
-bool create_execute_position(IoFrame &f, const uint8_t *own, const uint8_t *dst, bool low_power, uint8_t position) {
+bool create_execute_position(IoFrame &f, const uint8_t *own, const uint8_t *dst,
+                             bool low_power, uint8_t position) {
   if (position > POSITION_PERCENT_MAX)
     return false;
+
   init_frame(f, true, true, false, low_power);
   set_dst(f, dst);
   set_src(f, own);
+
   const auto payload = make_position_payload(EXECUTE_ACEI, position);
-  return set_cmd(f, CMD_EXECUTE, payload.data(), payload.size());
+
+  ESP_LOGI(
+      "execute_trace",
+      "POSITION dst=%02X%02X%02X position=%u wire_position=0x%02X "
+      "low_power=%s payload=[%02X %02X %02X %02X %02X %02X %02X %02X]",
+      dst[0],
+      dst[1],
+      dst[2],
+      position,
+      static_cast<uint8_t>(2 * position),
+      low_power ? "YES" : "NO",
+      payload[0],
+      payload[1],
+      payload[2],
+      payload[3],
+      payload[4],
+      payload[5],
+      payload[6],
+      payload[7]);
+
+  return set_cmd(
+      f,
+      CMD_EXECUTE,
+      payload.data(),
+      payload.size());
 }
 
 /// Build a named-command execute frame (0x00) for STOP, FAVORITE, or VENT.
