@@ -397,13 +397,13 @@ void IOHomeControlComponent::process_received_packet_(const RadioRxPacket &packe
   
     struct PendingKeyChallenge {
       std::array<uint8_t, HMAC_SIZE> challenge{};
-      std::string controller_id;
     };
-  
-    // Chiave = Node ID del dispositivo che ha inviato CHALLENGE_REQ.
-    // È una map perché il KLF200 può trasferire la chiave a più prodotti
-    // contemporaneamente e gli scambi possono risultare interlacciati.
+    
     static std::map<std::string, PendingKeyChallenge> pending_key_challenges;
+    
+    auto exchange_key = [](const uint8_t *src, const uint8_t *dst) {
+      return node_id_to_string(src) + ">" + node_id_to_string(dst);
+    };
   
     const bool is_key_or_pairing_frame =
         frame.cmd == CMD_DISCOVER_REQ ||
@@ -460,25 +460,20 @@ void IOHomeControlComponent::process_received_packet_(const RadioRxPacket &packe
        */
       if (frame.cmd == CMD_CHALLENGE_REQ &&
           frame.data_len == HMAC_SIZE) {
-        const std::string device_id =
-            node_id_to_string(frame.src);
-  
+        const std::string key = exchange_key(frame.src, frame.dst);
+      
         PendingKeyChallenge pending;
         memcpy(
             pending.challenge.data(),
             frame.data,
             HMAC_SIZE);
-  
-        pending.controller_id =
-            node_id_to_string(frame.dst);
-  
-        pending_key_challenges[device_id] = pending;
-  
+      
+        pending_key_challenges[key] = pending;
+      
         ESP_LOGI(
             "io_key_trace",
-            "Stored challenge: device=%s controller=%s challenge=%02X%02X%02X%02X%02X%02X",
-            device_id.c_str(),
-            pending.controller_id.c_str(),
+            "Stored challenge: exchange=%s challenge=%02X%02X%02X%02X%02X%02X",
+            key.c_str(),
             pending.challenge[0],
             pending.challenge[1],
             pending.challenge[2],
@@ -493,36 +488,30 @@ void IOHomeControlComponent::process_received_packet_(const RadioRxPacket &packe
        */
       if (frame.cmd == CMD_KEY_TRANSFER &&
           frame.data_len == AES_KEY_SIZE) {
-        const std::string controller_id =
-            node_id_to_string(frame.src);
-  
-        const std::string device_id =
-            node_id_to_string(frame.dst);
-  
+        const std::string direct_key =
+            exchange_key(frame.src, frame.dst);
+      
+        const std::string reverse_key =
+            exchange_key(frame.dst, frame.src);
+      
         auto pending_it =
-            pending_key_challenges.find(device_id);
-  
+            pending_key_challenges.find(direct_key);
+      
+        // Fallback per dispositivi che inviano la challenge nella direzione opposta.
+        if (pending_it == pending_key_challenges.end()) {
+          pending_it = pending_key_challenges.find(reverse_key);
+        }
+      
         if (pending_it == pending_key_challenges.end()) {
           ESP_LOGW(
               "io_key_trace",
-              "KEY_TRANSFER without stored challenge: controller=%s device=%s",
-              controller_id.c_str(),
-              device_id.c_str());
-        } else if (pending_it->second.controller_id != controller_id) {
-          ESP_LOGW(
-              "io_key_trace",
-              "KEY_TRANSFER controller mismatch: expected=%s received=%s device=%s",
-              pending_it->second.controller_id.c_str(),
-              controller_id.c_str(),
-              device_id.c_str());
+              "KEY_TRANSFER without matching challenge: src=%s dst=%s",
+              node_id_to_string(frame.src).c_str(),
+              node_id_to_string(frame.dst).c_str());
         } else {
-          /*
-           * create_key_transfer() usa il comando precedente KEY_INIT
-           * insieme alla challenge per generare il flusso di cifratura.
-           */
           const uint8_t previous_cmd = CMD_KEY_INIT;
           uint8_t recovered_key[AES_KEY_SIZE];
-  
+      
           if (crypto::crypt_key(
                   &previous_cmd,
                   1,
@@ -530,7 +519,7 @@ void IOHomeControlComponent::process_received_packet_(const RadioRxPacket &packe
                   frame.data,
                   recovered_key)) {
             char key_text[(AES_KEY_SIZE * 2) + 1];
-  
+      
             for (uint8_t i = 0; i < AES_KEY_SIZE; i++) {
               snprintf(
                   &key_text[i * 2],
@@ -538,23 +527,23 @@ void IOHomeControlComponent::process_received_packet_(const RadioRxPacket &packe
                   "%02X",
                   recovered_key[i]);
             }
-  
+      
             key_text[AES_KEY_SIZE * 2] = '\0';
-  
+      
             ESP_LOGW(
                 "io_key_trace",
-                "RECOVERED SYSTEM KEY for device %s: %s",
-                device_id.c_str(),
+                "RECOVERED SYSTEM KEY for %s -> %s: %s",
+                node_id_to_string(frame.src).c_str(),
+                node_id_to_string(frame.dst).c_str(),
                 key_text);
-  
-            // La challenge è monouso.
+      
             pending_key_challenges.erase(pending_it);
           } else {
             ESP_LOGE(
                 "io_key_trace",
-                "Failed to decrypt KEY_TRANSFER: controller=%s device=%s",
-                controller_id.c_str(),
-                device_id.c_str());
+                "Failed to decrypt KEY_TRANSFER: src=%s dst=%s",
+                node_id_to_string(frame.src).c_str(),
+                node_id_to_string(frame.dst).c_str());
           }
         }
       }
@@ -564,10 +553,11 @@ void IOHomeControlComponent::process_received_packet_(const RadioRxPacket &packe
        * rimaste per evitare che vengano riutilizzate accidentalmente.
        */
       if (frame.cmd == CMD_KEY_CONFIRM) {
-        const std::string device_id =
-            node_id_to_string(frame.src);
-  
-        pending_key_challenges.erase(device_id);
+        pending_key_challenges.erase(
+            exchange_key(frame.src, frame.dst));
+      
+        pending_key_challenges.erase(
+            exchange_key(frame.dst, frame.src));
       }
     }
   
