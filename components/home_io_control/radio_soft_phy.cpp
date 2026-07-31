@@ -83,6 +83,8 @@ bool is_known_io_command(uint8_t cmd) {
     case CMD_DISCOVER_SPE_RESP:
     case CMD_DISCOVER_CONFIRM:
     case CMD_DISCOVER_CONFIRM_ACK:
+    case CMD_DISCOVER_ALT_REQ:
+    case CMD_DISCOVER_ALT_RESP:
     case CMD_KEY_INIT:
     case CMD_KEY_TRANSFER:
     case CMD_KEY_CONFIRM:
