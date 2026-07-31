@@ -449,11 +449,30 @@ void IOHomeControlComponent::process_received_packet_(const RadioRxPacket &packe
   }
 
   if (frame.cmd == CMD_PRIVATE_RESP || frame.cmd == CMD_STATUS_UPDATE) {
-    // Passive receive mode can still observe replies/status from other exchanges. If a frame
-    // is status-bearing and not exchange-internal, try to merge it into known device state.
+    // Passive receive mode can still observe replies/status from other exchanges.
     this->update_device_status_(frame);
     return;
   }
+  
+  // Passive KLF200 product discovery.
+  // Observe alternate discovery responses without transmitting anything
+  // or modifying the existing IO-homecontrol network.
+  if (frame.cmd == CMD_DISCOVER_ALT_RESP) {
+    const std::string product_id = node_id_to_string(frame.src);
+    const std::string controller_id = node_id_to_string(frame.dst);
+    const uint8_t mode = frame.data_len > 0 ? frame.data[0] : 0xFF;
+  
+    ESP_LOGI(detail::TAG,
+             "Passive product discovered: node=%s controller=%s mode=0x%02X",
+             product_id.c_str(),
+             controller_id.c_str(),
+             mode);
+  
+    return;
+  }
+  
+  // Check if this frame targets one of our registered devices...
+  const std::string dst_id = node_id_to_string(frame.dst);
 
   // Check if this frame targets one of our registered devices (e.g., a physical remote
   // commanding a shutter we also control). If so, schedule a status poll after 2 seconds
