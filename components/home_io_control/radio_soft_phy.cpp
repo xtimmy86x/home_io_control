@@ -75,8 +75,15 @@ namespace {
 bool is_known_io_command(uint8_t cmd) {
   switch (cmd) {
     case CMD_EXECUTE:
+    case CMD_ACTIVATE_MODE:
     case CMD_PRIVATE:
     case CMD_PRIVATE_RESP:
+    case CMD_SET_SENSOR:
+    case CMD_SET_SENSOR_ACK:
+    case CMD_IDENTIFY:
+    case CMD_WRITE_PRIVATE:
+    case CMD_WRITE_PRIVATE_ACK:
+
     case CMD_DISCOVER_REQ:
     case CMD_DISCOVER_RESP:
     case CMD_DISCOVER_SPE_REQ:
@@ -85,11 +92,16 @@ bool is_known_io_command(uint8_t cmd) {
     case CMD_DISCOVER_CONFIRM_ACK:
     case CMD_DISCOVER_ALT_REQ:
     case CMD_DISCOVER_ALT_RESP:
+
     case CMD_KEY_INIT:
     case CMD_KEY_TRANSFER:
     case CMD_KEY_CONFIRM:
+    case CMD_ADDRESS_REQ:
+    case CMD_ADDRESS_RESP:
+    case CMD_LAUNCH_KEY_TRANSFER:
     case CMD_CHALLENGE_REQ:
     case CMD_CHALLENGE_RESP:
+
     case CMD_GET_NAME:
     case CMD_GET_NAME_RESP:
     case CMD_SET_NAME:
