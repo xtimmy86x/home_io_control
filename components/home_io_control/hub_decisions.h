@@ -108,9 +108,12 @@ inline ExchangeFinalResponseDisposition classify_exchange_final_response(const I
 ///
 /// @param candidate Parsed IoFrame.
 /// @return ACCEPT if command is CMD_DISCOVER_RESP; INVALID otherwise.
-inline PairingDiscoveryDisposition classify_pairing_discovery_response(const IoFrame &candidate) {
-  return candidate.cmd == CMD_DISCOVER_RESP ? PairingDiscoveryDisposition::ACCEPT
-                                            : PairingDiscoveryDisposition::INVALID;
+inline PairingDiscoveryDisposition classify_pairing_discovery_response(
+    const IoFrame &candidate) {
+  return candidate.cmd == CMD_DISCOVER_RESP ||
+                 candidate.cmd == CMD_DISCOVER_ALT_RESP
+             ? PairingDiscoveryDisposition::ACCEPT
+             : PairingDiscoveryDisposition::INVALID;
 }
 
 /// Decide if a frame is a valid key-challenge (0x3C) during pairing key exchange.
