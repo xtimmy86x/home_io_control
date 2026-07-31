@@ -390,6 +390,53 @@ void IOHomeControlComponent::process_received_packet_(const RadioRxPacket &packe
 
   detail::log_component_capture(this->radio_, "parse_ok", packet.data, packet.len, &frame);
 
+  #ifdef IOHOME_KEY_TRACE
+    const bool is_key_or_pairing_frame =
+        frame.cmd == CMD_DISCOVER_REQ ||
+        frame.cmd == CMD_DISCOVER_RESP ||
+        frame.cmd == CMD_DISCOVER_SPE_REQ ||
+        frame.cmd == CMD_DISCOVER_SPE_RESP ||
+        frame.cmd == CMD_DISCOVER_CONFIRM ||
+        frame.cmd == CMD_DISCOVER_CONFIRM_ACK ||
+        frame.cmd == CMD_DISCOVER_ALT_REQ ||
+        frame.cmd == CMD_DISCOVER_ALT_RESP ||
+        frame.cmd == CMD_KEY_INIT ||
+        frame.cmd == CMD_KEY_TRANSFER ||
+        frame.cmd == CMD_KEY_CONFIRM ||
+        frame.cmd == CMD_ADDRESS_REQ ||
+        frame.cmd == CMD_ADDRESS_RESP ||
+        frame.cmd == CMD_LAUNCH_KEY_TRANSFER ||
+        frame.cmd == CMD_CHALLENGE_REQ ||
+        frame.cmd == CMD_CHALLENGE_RESP;
+  
+    if (is_key_or_pairing_frame) {
+      std::string payload;
+  
+      for (uint8_t i = 0; i < frame.data_len; i++) {
+        char byte_text[4];
+        snprintf(byte_text, sizeof(byte_text), "%02X", frame.data[i]);
+  
+        if (!payload.empty()) {
+          payload += ' ';
+        }
+  
+        payload += byte_text;
+      }
+  
+      ESP_LOGI(
+          "io_key_trace",
+          "freq=%" PRIu32
+          " src=%s dst=%s cmd=%s(0x%02X) data_len=%u data=[%s]",
+          packet.freq_hz,
+          node_id_to_string(frame.src).c_str(),
+          node_id_to_string(frame.dst).c_str(),
+          command_name(frame.cmd),
+          frame.cmd,
+          frame.data_len,
+          payload.c_str());
+    }
+  #endif
+  
   // Exchange-internal frames (0x3C challenge request, 0x3D challenge response) are part of
   // another controller's authenticated exchange. They carry no extractable status data for
   // a passive observer — skip silently. They remain visible in io_capture (stage=parse_ok).
