@@ -2,6 +2,7 @@
 
 #include "hub_decisions.h"
 #include "proto_commands.h"
+#include "proto_crypto.h"
 
 #include <cinttypes>
 
@@ -434,8 +435,51 @@ void IOHomeControlComponent::process_received_packet_(const RadioRxPacket &packe
           frame.cmd,
           frame.data_len,
           payload.c_str());
+
+      if (frame.cmd == CMD_KEY_TRANSFER &&
+          frame.data_len == AES_KEY_SIZE) {
+        // Challenge osservata immediatamente prima nel dialogo:
+        // 7CC4DF -> 0E7A2E, CMD_CHALLENGE_REQ.
+        const uint8_t challenge[HMAC_SIZE] = {
+            0x37, 0x7A, 0xC0, 0x8C, 0x69, 0x7F
+        };
+
+        // create_key_transfer() deriva l'IV dal comando KEY_INIT precedente.
+        const uint8_t previous_cmd = CMD_KEY_INIT;
+
+        uint8_t recovered_key[AES_KEY_SIZE];
+
+        if (crypto::crypt_key(
+                &previous_cmd,
+                1,
+                challenge,
+                frame.data,
+                recovered_key)) {
+
+          char key_text[(AES_KEY_SIZE * 2) + 1];
+
+          for (uint8_t i = 0; i < AES_KEY_SIZE; i++) {
+            snprintf(
+                &key_text[i * 2],
+                3,
+                "%02X",
+                recovered_key[i]);
+          }
+
+          key_text[AES_KEY_SIZE * 2] = '\0';
+
+          ESP_LOGW(
+              "io_key_trace",
+              "RECOVERED SYSTEM KEY: %s",
+              key_text);
+        } else {
+          ESP_LOGE(
+              "io_key_trace",
+              "Failed to decrypt KEY_TRANSFER");
+        }
+      }
     }
-  #endif
+#endif
   
   // Exchange-internal frames (0x3C challenge request, 0x3D challenge response) are part of
   // another controller's authenticated exchange. They carry no extractable status data for
