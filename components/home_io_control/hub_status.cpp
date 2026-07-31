@@ -479,7 +479,6 @@ void IOHomeControlComponent::process_received_packet_(const RadioRxPacket &packe
   // to pick up the resulting position change. The timeout name includes the device ID so
   // repeated remote activity resets the timer rather than stacking redundant polls.
   // The 2-second delay gives the device time to complete the exchange and start moving.
-  const std::string dst_id = node_id_to_string(frame.dst);
   if (this->get_device(dst_id) != nullptr && memcmp(frame.src, this->node_id_, NODE_ID_SIZE) != 0) {
     ESP_LOGD(detail::TAG, "rx remote_activity src=%s dst=%s cmd=%s(0x%02X), scheduling status poll",
              node_id_to_string(frame.src).c_str(), dst_id.c_str(), command_name(frame.cmd), frame.cmd);
