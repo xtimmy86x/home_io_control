@@ -5,6 +5,7 @@
 #include "proto_commands.h"
 
 #include "proto_crypto.h"
+#include "esphome/core/log.h"
 
 #include <array>
 #include <cstring>
