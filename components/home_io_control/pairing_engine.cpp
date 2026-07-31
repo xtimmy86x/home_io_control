@@ -484,12 +484,29 @@ bool PairingEngine::discover_and_pair() {
   auto disc_disp = run_discovery_phase_(context);
   if (disc_disp != decisions::PairingDiscoveryDisposition::ACCEPT) {
     log_discovery_diagnostic(disc_disp);
-    this->finish_pairing_attempt_(disc_disp == decisions::PairingDiscoveryDisposition::INVALID
-                                      ? PairingOutcome::INVALID_RESPONSE
-                                      : PairingOutcome::NO_RESPONSE);
+    this->finish_pairing_attempt_(
+        disc_disp == decisions::PairingDiscoveryDisposition::INVALID
+            ? PairingOutcome::INVALID_RESPONSE
+            : PairingOutcome::NO_RESPONSE);
     return false;
   }
-
+  
+  // Safe handling of alternate KLF200 product discovery.
+  // Do not continue with KEY_INIT / KEY_TRANSFER.
+  if (context.rx.cmd == CMD_DISCOVER_ALT_RESP) {
+    ESP_LOGI(TAG,
+             "Alternate discovery: device=%s data_len=%u mode=0x%02X",
+             context.device_id.c_str(),
+             context.rx.data_len,
+             context.rx.data_len > 0 ? context.rx.data[0] : 0);
+  
+    ESP_LOGW(TAG,
+             "Stopping after alternate discovery: key transfer intentionally disabled");
+  
+    this->finish_pairing_attempt_(PairingOutcome::INVALID_RESPONSE);
+    return false;
+  }
+  
   // Phase 2: Key exchange — retry up to the configured number of times.
   bool key_exchanged = false;
   for (int ke_attempt = 0; ke_attempt < tuning_->pairing_key_exchange_retries; ke_attempt++) {
