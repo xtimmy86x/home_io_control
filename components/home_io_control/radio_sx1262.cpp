@@ -33,6 +33,7 @@
 namespace esphome {
 namespace home_io_control {
 
+constexpr uint8_t SX1262_GET_PACKET_STATUS = 0x14;
 static const char *const TAG = "home_io_control.sx1262";
 static const uint8_t SX1262_SYNC_WORD_PARAM_24_BITS = 0x18;
 // Fixed probe length chosen from captures of 23-25 byte protocol frames after UART packing
@@ -691,8 +692,40 @@ bool RadioSX1262::read_rx_packet(RadioRxPacket &packet, bool blocking_wait, uint
     memcpy(packet.data, recovered_buf, probe.frame_len);
     packet.len = probe.frame_len;
 #ifdef IOHOME_FRAME_LOG
-    ESP_LOGD(TAG, "UART probe: valid=1 bit_offset=%u frame_start=%u frame_len=%u decoded_len=%u", probe.bit_offset,
-             probe.frame_start, probe.frame_len, probe.decoded_len);
+    uint8_t packet_status[3] = {0};
+
+    this->read_opcode_(
+        SX1262_GET_PACKET_STATUS,
+        packet_status,
+        sizeof(packet_status));
+
+    // In modalità GFSK:
+    // packet_status[0] = RxStatus
+    // packet_status[1] = RSSI Sync, espresso in -dBm / 2
+    // packet_status[2] = RSSI Average, espresso in -dBm / 2
+    const int16_t rssi_sync_dbm =
+        -static_cast<int16_t>(packet_status[1]) / 2;
+
+    const int16_t rssi_avg_dbm =
+        -static_cast<int16_t>(packet_status[2]) / 2;
+
+    ESP_LOGD(
+        TAG,
+        "UART probe: valid=1 bit_offset=%u frame_start=%u "
+        "frame_len=%u decoded_len=%u irq=0x%04X "
+        "rx_status=0x%02X rssi_sync=%d dBm rssi_avg=%d dBm "
+        "reported_len=%u raw_probe_len=%u rx_offset=%u",
+        probe.bit_offset,
+        probe.frame_start,
+        probe.frame_len,
+        probe.decoded_len,
+        irq_status,
+        packet_status[0],
+        rssi_sync_dbm,
+        rssi_avg_dbm,
+        reported_len,
+        raw_probe_len,
+        rx_offset);
 #endif
   } else {
 #ifdef IOHOME_FRAME_LOG
@@ -700,6 +733,33 @@ bool RadioSX1262::read_rx_packet(RadioRxPacket &packet, bool blocking_wait, uint
     // whether post-TX RX corruption is being correctly caught by CRC or slipping through.
     char hex_buf[97] = {0};  // 32 bytes * 3 chars + null
     uint8_t dump_len = std::min(raw_probe_len, (uint8_t) 32);
+
+    uint8_t packet_status[3] = {0};
+
+    this->read_opcode_(
+        SX1262_GET_PACKET_STATUS,
+        packet_status,
+        sizeof(packet_status));
+
+    const int16_t rssi_sync_dbm =
+        -static_cast<int16_t>(packet_status[1]) / 2;
+
+    const int16_t rssi_avg_dbm =
+        -static_cast<int16_t>(packet_status[2]) / 2;
+
+    ESP_LOGW(
+        TAG,
+        "RX diagnostic: irq=0x%04X rx_status=0x%02X "
+        "rssi_sync=%d dBm rssi_avg=%d dBm "
+        "reported_len=%u raw_probe_len=%u rx_offset=%u",
+        irq_status,
+        packet_status[0],
+        rssi_sync_dbm,
+        rssi_avg_dbm,
+        reported_len,
+        raw_probe_len,
+        rx_offset);
+    
     for (uint8_t i = 0; i < dump_len; i++)
       snprintf(hex_buf + (i * 3), 4, "%02X ", rx_buf[i]);
     ESP_LOGW(TAG, "UART probe: valid=0 decoded_len=%u raw_probe_len=%u", probe.decoded_len, raw_probe_len);
