@@ -406,8 +406,8 @@ void RadioSX1262::configure_radio_() {
   uint8_t const pkt_type = 0x00;
   this->write_opcode_(SX1262_SET_PACKET_TYPE, &pkt_type, 1);
 
-  // 8. Sniffer fixed on channel 2
-  this->set_frequency_register_(FREQ_CH2);
+  // 8. Sniffer fixed on channel 3
+  this->set_frequency_register_(FREQ_CH3);
   
   ESP_LOGW(
       TAG,
