@@ -33,7 +33,6 @@
 namespace esphome {
 namespace home_io_control {
 
-constexpr uint8_t SX1262_GET_PACKET_STATUS = 0x14;
 static const char *const TAG = "home_io_control.sx1262";
 static const uint8_t SX1262_SYNC_WORD_PARAM_24_BITS = 0x18;
 // Fixed probe length chosen from captures of 23-25 byte protocol frames after UART packing
