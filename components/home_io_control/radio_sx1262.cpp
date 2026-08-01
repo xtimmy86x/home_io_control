@@ -28,6 +28,7 @@
 #include "log_frame.h"
 #include "esphome/core/log.h"
 #include "esphome/core/application.h"
+#include <inttypes.h>
 
 namespace esphome {
 namespace home_io_control {
@@ -505,11 +506,12 @@ void RadioSX1262::set_frequency_register_(uint32_t freq_hz) {
 }
 
 void RadioSX1262::change_frequency(uint32_t freq_hz) {
-  this->set_mode_standby();
-  this->set_frequency_register_(freq_hz);
-  this->clear_irq_status_(0xFFFF);  // Clear stale preamble/sync bits from previous channel
-  this->clear_dio_fired();          // Clear stale DIO1 latch from previous channel activity
-  this->set_mode_rx();
+  // Sniffer diagnostico: ignora tutte le richieste di hopping.
+  // Il ricevitore rimane fisso sul canale scelto in configure_radio_().
+  ESP_LOGV(
+      TAG,
+      "Sniffer fixed channel: ignoring requested frequency %" PRIu32,
+      freq_hz);
 }
 
 void RadioSX1262::set_rx_bandwidth_(SX1262RxBandwidth bandwidth) {
