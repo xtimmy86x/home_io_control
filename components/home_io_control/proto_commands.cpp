@@ -79,7 +79,7 @@ inline std::array<uint8_t, EXECUTE_PAYLOAD_SIZE> make_position_payload(uint8_t a
 /// For real positions (0-100), the value is doubled in the frame (0x00=0%, 0xC8=100%).
 /// For special commands (stop/favorite), a shorter 6-byte payload is used.
 bool create_execute(IoFrame &f, const uint8_t *own, const uint8_t *dst, bool low_power, uint8_t position) {
-  init_frame(f, true, true, false, true);
+  init_frame(f, true, true, false, low_power);
   set_dst(f, dst);
   set_src(f, own);
   if (position <= POSITION_PERCENT_MAX) {
@@ -122,7 +122,7 @@ bool create_execute_position(IoFrame &f, const uint8_t *own, const uint8_t *dst,
   if (position > POSITION_PERCENT_MAX)
     return false;
 
-  init_frame(f, true, true, false, true);
+  init_frame(f, true, true, false, low_power);
   set_dst(f, dst);
   set_src(f, own);
 
@@ -179,7 +179,7 @@ bool create_execute_command(IoFrame &f, const uint8_t *own, const uint8_t *dst, 
     default:
       return false;
   }
-  init_frame(f, true, true, false, true);
+  init_frame(f, true, true, false, low_power);
   set_dst(f, dst);
   set_src(f, own);
   const uint8_t payload[EXECUTE_SPECIAL_PAYLOAD_SIZE] = {EXECUTE_ORIGINATOR, EXECUTE_ACEI, main_byte,
