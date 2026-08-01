@@ -552,8 +552,28 @@ bool RadioSX1262::send_packet(const uint8_t *data, uint8_t len, const RadioTxCon
   if (encoded_len == 0)
     return false;
 
-  this->set_packet_params_(tx_config.preamble_len, encoded_len, SX1262_GFSK_PACKET_TYPE_KNOWN_LENGTH,
-                           SX1262_GFSK_CRC_OFF);
+  // RadioTxConfig expresses the IO-Homecontrol preamble in bytes,
+  // as used by the SX1276 driver. SX1262 SetPacketParams expects bits.
+  const uint32_t requested_preamble_bits =
+      static_cast<uint32_t>(tx_config.preamble_len) * 8U;
+  
+  const uint16_t preamble_bits =
+      static_cast<uint16_t>(
+          std::min<uint32_t>(requested_preamble_bits, 0xFFFFU));
+  
+  #ifdef IOHOME_FRAME_LOG
+  ESP_LOGI(
+      TAG,
+      "SX1262 TX preamble: configured=%u bytes -> %u bits",
+      tx_config.preamble_len,
+      preamble_bits);
+  #endif
+  
+  this->set_packet_params_(
+      preamble_bits,
+      encoded_len,
+      SX1262_GFSK_PACKET_TYPE_KNOWN_LENGTH,
+      SX1262_GFSK_CRC_OFF);
 
   // Clear IRQs and write to TX buffer at offset 0
   this->clear_irq_status_(0xFFFF);
