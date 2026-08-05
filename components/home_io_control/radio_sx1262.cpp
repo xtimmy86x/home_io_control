@@ -721,6 +721,9 @@ bool RadioSX1262::read_rx_packet(RadioRxPacket &packet, bool blocking_wait, uint
     memcpy(recovered_buf, probe.decoded + probe.frame_start, probe.frame_len);
     memcpy(packet.data, recovered_buf, probe.frame_len);
     packet.len = probe.frame_len;
+    // Sniffer: re-enter RX immediately before diagnostics/logging,
+    // so closely spaced frames are not missed.
+    this->reset_rx_state_();
 #ifdef IOHOME_FRAME_LOG
     uint8_t packet_status[3] = {0};
 
@@ -854,16 +857,25 @@ bool RadioSX1262::read_rx_packet(RadioRxPacket &packet, bool blocking_wait, uint
     if (copy_len > 0)
       memcpy(packet.data, rx_buf, copy_len);
     packet.len = copy_len;
+
+    // Re-enter RX immediately even after an undecodable capture.
+    this->reset_rx_state_();
   }
   packet.freq_hz = this->current_freq_;
-  this->fill_capture_info_(blocking_wait, irq_status, rx_offset, reported_len, rx_buf, raw_probe_len, packet.data,
-                           packet.len);
+  this->fill_capture_info_(
+    blocking_wait,
+    irq_status,
+    rx_offset,
+    reported_len,
+    rx_buf,
+    raw_probe_len,
+    packet.data,
+    packet.len);
 
 #ifdef IOHOME_FRAME_LOG
   if (packet.len > 0)
     log_frame("RX", packet.data, packet.len, this->current_freq_);
 #endif
-  this->reset_rx_state_();
   return packet.len > 0;
 }
 
