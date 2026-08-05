@@ -759,8 +759,47 @@ bool RadioSX1262::read_rx_packet(RadioRxPacket &packet, bool blocking_wait, uint
     
     for (uint8_t i = 0; i < dump_len; i++)
       snprintf(hex_buf + (i * 3), 4, "%02X ", rx_buf[i]);
-    ESP_LOGW(TAG, "UART probe: valid=0 decoded_len=%u raw_probe_len=%u", probe.decoded_len, raw_probe_len);
-    ESP_LOGW(TAG, "  raw[0..%u]: %s", dump_len - 1, hex_buf);
+    ESP_LOGW(
+        TAG,
+        "UART probe: valid=0 decoded_len=%u raw_probe_len=%u",
+        probe.decoded_len,
+        raw_probe_len);
+
+    ESP_LOGW(
+        TAG,
+        "parse_fail details: decoded_len=%u bit_offset=%u "
+        "frame_start=%u frame_len=%u",
+        probe.decoded_len,
+        probe.bit_offset,
+        probe.frame_start,
+        probe.frame_len);
+
+    char decoded_hex[(sizeof(probe.decoded) * 3) + 1] = {0};
+
+    const size_t decoded_dump_len =
+        std::min<size_t>(
+            probe.decoded_len,
+            sizeof(probe.decoded));
+
+    for (size_t i = 0; i < decoded_dump_len; i++) {
+      snprintf(
+          decoded_hex + i * 3,
+          sizeof(decoded_hex) - i * 3,
+          "%02X ",
+          probe.decoded[i]);
+    }
+
+    ESP_LOGW(
+        TAG,
+        "decoded candidate [%u]: %s",
+        static_cast<unsigned>(decoded_dump_len),
+        decoded_hex);
+
+    ESP_LOGW(
+        TAG,
+        "raw[0..%u]: %s",
+        dump_len > 0 ? dump_len - 1 : 0,
+        hex_buf);
     // Try to show why CRC failed at best offset
     if (probe.decoded_len >= FRAME_MIN_SIZE) {
       int best_len = std::min<int>(probe.decoded_len, FRAME_MAX_SIZE);
