@@ -94,9 +94,17 @@ static constexpr int32_t SX1262_EXCHANGE_RESPONSE_WAIT_SLICE_MS = 90;
 ///       defaults beyond the currently documented Heltec V3/V4 assumptions.
 class RadioSX1262 : public RadioDriver {
  public:
-  RadioSX1262(SpiAccess *spi, InternalGPIOPin *rst_pin, InternalGPIOPin *dio1_pin, InternalGPIOPin *busy_pin,
-              uint8_t tx_power, uint8_t tcxo_voltage, InternalGPIOPin *fem_en_pin = nullptr,
-              InternalGPIOPin *vfem_pin = nullptr, InternalGPIOPin *fem_pa_pin = nullptr)
+  RadioSX1262(
+      SpiAccess *spi,
+      InternalGPIOPin *rst_pin,
+      InternalGPIOPin *dio1_pin,
+      InternalGPIOPin *busy_pin,
+      uint8_t tx_power,
+      uint8_t tcxo_voltage,
+      uint8_t sniffer_channel,
+      InternalGPIOPin *fem_en_pin = nullptr,
+      InternalGPIOPin *vfem_pin = nullptr,
+      InternalGPIOPin *fem_pa_pin = nullptr)
       : RadioDriver(rst_pin),
         spi_(spi),
         dio1_pin_(dio1_pin),
@@ -105,7 +113,8 @@ class RadioSX1262 : public RadioDriver {
         vfem_pin_(vfem_pin),
         fem_pa_pin_(fem_pa_pin),
         tx_power_(tx_power),
-        tcxo_voltage_(tcxo_voltage) {}
+        tcxo_voltage_(tcxo_voltage),
+        sniffer_channel_(sniffer_channel) {}
 
   /// @copydoc RadioDriver::init
   bool init() override;
@@ -298,6 +307,7 @@ class RadioSX1262 : public RadioDriver {
   InternalGPIOPin *fem_pa_pin_;
   uint8_t tx_power_;
   uint8_t tcxo_voltage_;
+  uint8_t sniffer_channel_{2};
   bool failed_{false};
   SX1262RxBandwidth rx_bandwidth_{SX1262RxBandwidth::BW_117_3_KHZ};  ///< Runtime-tunable RX bandwidth.
   uint16_t response_preamble_{SX1262_RESPONSE_PREAMBLE};             ///< Runtime-tunable response preamble.

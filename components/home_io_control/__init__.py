@@ -28,6 +28,7 @@ CONF_SYSTEM_KEY = "system_key"
 CONF_TX_POWER = "tx_power"
 CONF_PA_PIN = "pa_pin"
 CONF_RADIO_TYPE = "radio_type"
+CONF_SNIFFER_CHANNEL = "sniffer_channel"
 CONF_FEM_EN_PIN = "fem_en_pin"
 CONF_VFEM_PIN = "vfem_pin"
 CONF_FEM_PA_PIN = "fem_pa_pin"
@@ -223,6 +224,7 @@ CONFIG_SCHEMA = (
             cv.Optional(CONF_EXPOSED_SENDERS, default=[]): cv.ensure_list(
                 validate_device_id
             ),
+            cv.Optional(CONF_SNIFFER_CHANNEL, default=2): cv.int_range(min=1, max=3),
             cv.Optional(tuning_module.CONF_TUNING): tuning_module.TUNING_CONFIG_SCHEMA,
         }
     )
@@ -285,7 +287,8 @@ async def to_code(config):
         cg.add(var.set_radio_type(config[CONF_RADIO_TYPE]))
 
     cg.add(var.set_tcxo_voltage(config[CONF_TCXO_VOLTAGE]))
-
+    cg.add(var.set_sniffer_channel(config[CONF_SNIFFER_CHANNEL]))
+    
     for sender_id in config[CONF_EXPOSED_SENDERS]:
         cg.add(var.add_exposed_sender(sender_id))
 

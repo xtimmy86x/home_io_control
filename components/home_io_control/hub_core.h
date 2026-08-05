@@ -143,6 +143,10 @@ class IOHomeControlComponent : public Component,
   void set_pa_pin(uint8_t pa_pin) { this->pa_pin_ = pa_pin; }
   /// Set radio type ("sx1276" or "sx1262"); empty string means auto‑detect.
   void set_radio_type(const std::string &type) { this->radio_type_ = type; }
+  /// Set the fixed SX1262 sniffer channel: 1, 2 or 3.
+  void set_sniffer_channel(uint8_t channel) {
+    this->sniffer_channel_ = channel;
+  }
   /// Set TCXO voltage for SX1262 (1.8V / 3.3V).
   void set_tcxo_voltage(uint8_t voltage) { this->tcxo_voltage_ = voltage; }
 
@@ -519,7 +523,8 @@ class IOHomeControlComponent : public Component,
   uint8_t tx_power_{DEFAULT_TX_POWER_DBM};
   uint8_t pa_pin_{DEFAULT_PA_PIN_PA_BOOST};
   uint8_t tcxo_voltage_{DEFAULT_TCXO_VOLTAGE_SETTING_1P8V};  ///< SX1262 TCXO voltage setting (default 1.8 V)
-
+  uint8_t sniffer_channel_{2};
+  
   // --- Runtime state ---
   bool initialized_{false};
   bool busy_{false};

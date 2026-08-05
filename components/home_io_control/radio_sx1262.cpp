@@ -406,8 +406,41 @@ void RadioSX1262::configure_radio_() {
   uint8_t const pkt_type = 0x00;
   this->write_opcode_(SX1262_SET_PACKET_TYPE, &pkt_type, 1);
 
-  // 8. Sniffer fixed on channel 3
-  this->set_frequency_register_(FREQ_CH3);
+  // 8. Sniffer fixed channel selected from YAML.
+  uint32_t sniffer_frequency = FREQ_CH2;
+  const char *sniffer_channel_name = "CH2 868.950 MHz";
+
+  switch (this->sniffer_channel_) {
+    case 1:
+      sniffer_frequency = FREQ_CH1;
+      sniffer_channel_name = "CH1 868.250 MHz";
+      break;
+
+    case 2:
+      sniffer_frequency = FREQ_CH2;
+      sniffer_channel_name = "CH2 868.950 MHz";
+      break;
+
+    case 3:
+      sniffer_frequency = FREQ_CH3;
+      sniffer_channel_name = "CH3 869.850 MHz";
+      break;
+
+    default:
+      ESP_LOGW(
+          TAG,
+          "Invalid sniffer channel %u, using CH2",
+          this->sniffer_channel_);
+      this->sniffer_channel_ = 2;
+      break;
+  }
+
+  this->set_frequency_register_(sniffer_frequency);
+
+  ESP_LOGW(
+      TAG,
+      "SNIFFER FIXED CHANNEL: %s",
+      sniffer_channel_name);
   
   ESP_LOGW(TAG, "SNIFFER FIXED CHANNEL: CH1 868.250 MHz");
 

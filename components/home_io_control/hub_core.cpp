@@ -101,8 +101,17 @@ void IOHomeControlComponent::setup() {
       return;
     }
     this->radio_ =
-        new (std::nothrow) RadioSX1262(this, this->rst_pin_, this->dio1_pin_, this->busy_pin_, this->tx_power_,
-                                       this->tcxo_voltage_, this->fem_en_pin_, this->vfem_pin_, this->fem_pa_pin_);
+      new (std::nothrow) RadioSX1262(
+          this,
+          this->rst_pin_,
+          this->dio1_pin_,
+          this->busy_pin_,
+          this->tx_power_,
+          this->tcxo_voltage_,
+          this->sniffer_channel_,
+          this->fem_en_pin_,
+          this->vfem_pin_,
+          this->fem_pa_pin_);
   } else {
     if (this->dio0_pin_ == nullptr) {
       ESP_LOGE(detail::TAG, "SX1276 requires dio0_pin");
