@@ -26,8 +26,11 @@ constexpr uint8_t EXECUTE_ORIGINATOR = ORIGINATOR_USER_REMOTE;
 /// Level=2 (user_high) matches real IO-homecontrol remotes and avoids
 /// RESULT_PRIORITY_LOCKED_NON_EXEC (0x38) rejections on devices locked at level 3.
 /// Composition: (ACEI_LEVEL_USER_HIGH << 5) | (0 << 3) | (1 << 1) | 1 = 0x43.
-constexpr uint8_t EXECUTE_ACEI =
-    (ACEI_LEVEL_USER_HIGH << ACEI_LEVEL_SHIFT) | (1 << ACEI_EXTENDED_SHIFT) | ACEI_VALID_BIT;
+//constexpr uint8_t EXECUTE_ACEI =
+//    (3 << ACEI_LEVEL_SHIFT) |
+//    (1 << ACEI_EXTENDED_SHIFT) |
+//    ACEI_VALID_BIT;
+constexpr uint8_t EXECUTE_ACEI = 0x63;
 /// @brief ACEI byte for the force-open command — same bit layout as EXECUTE_ACEI but at the
 /// highest priority level instead of user_high.
 ///
