@@ -66,6 +66,8 @@ static constexpr uint8_t CMD_LAUNCH_KEY_TRANSFER = 0x38;  ///< Device-initiated 
 static constexpr uint8_t CMD_CHALLENGE_REQ = 0x3C;   ///< Device sends 6-byte random challenge
 static constexpr uint8_t CMD_CHALLENGE_RESP = 0x3D;  ///< Controller responds with HMAC proof
 
+static constexpr uint8_t CMD_UNKNOWN_46 = 0x46;  ///< Unknown command observed during controller transfer
+
 // Device info commands
 static constexpr uint8_t CMD_GET_NAME = 0x50;        ///< Request device name
 static constexpr uint8_t CMD_GET_NAME_RESP = 0x51;   ///< Device name response

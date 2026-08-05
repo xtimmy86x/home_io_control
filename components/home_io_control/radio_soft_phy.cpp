@@ -101,6 +101,7 @@ bool is_known_io_command(uint8_t cmd) {
     case CMD_LAUNCH_KEY_TRANSFER:
     case CMD_CHALLENGE_REQ:
     case CMD_CHALLENGE_RESP:
+    case CMD_UNKNOWN_46:
 
     case CMD_GET_NAME:
     case CMD_GET_NAME_RESP:
@@ -127,11 +128,24 @@ bool is_known_io_command(uint8_t cmd) {
 /// @param candidate_len Total decoded length of the candidate.
 /// @return true if the frame looks like a real protocol packet.
 bool is_plausible_uart_frame(const IoFrame &frame, uint8_t candidate_len) {
+  // During passive sniffing we may encounter valid protocol commands that are
+  // not yet present in the command table. CRC validation is authoritative, so
+  // do not reject a 2W frame merely because its command ID is unknown.
   if (candidate_len < FRAME_MIN_SIZE)
     return false;
-  if (is_known_io_command(frame.cmd))
-    return true;
-  return (frame.ctrl0 & CTRL0_PROTOCOL_1W) != 0;
+
+  // Reject clearly invalid addresses to reduce false-positive CRC matches.
+  const bool src_all_zero =
+      frame.src[0] == 0x00 &&
+      frame.src[1] == 0x00 &&
+      frame.src[2] == 0x00;
+
+  const bool dst_all_zero =
+      frame.dst[0] == 0x00 &&
+      frame.dst[1] == 0x00 &&
+      frame.dst[2] == 0x00;
+
+  return !src_all_zero && !dst_all_zero;
 }
 
 }  // namespace
