@@ -453,6 +453,34 @@ bool crypt_key(const uint8_t *data, uint8_t len, const uint8_t challenge[HMAC_SI
   return true;
 }
 
+bool crypt_1w_install_key(
+    const uint8_t src[NODE_ID_SIZE],
+    const uint8_t input[AES_KEY_SIZE],
+    uint8_t output[AES_KEY_SIZE]) {
+  if (src == nullptr || input == nullptr || output == nullptr)
+    return false;
+
+  uint8_t iv[AES_BLOCK_SIZE] = {0};
+
+  for (uint8_t i = 0; i < 15; i += NODE_ID_SIZE) {
+    iv[i] = src[0];
+    iv[i + 1] = src[1];
+    iv[i + 2] = src[2];
+  }
+
+  iv[15] = src[0];
+
+  uint8_t mask[AES_BLOCK_SIZE];
+
+  if (!aes128_encrypt(iv, TRANSFER_KEY, mask))
+    return false;
+
+  for (uint8_t i = 0; i < AES_KEY_SIZE; i++)
+    output[i] = input[i] ^ mask[i];
+
+  return true;
+}
+
 /// Generate 6 random bytes for a challenge using the ESP32 hardware RNG.
 void generate_challenge(uint8_t out[HMAC_SIZE]) {
   for (uint8_t i = 0; i < HMAC_SIZE; i++)

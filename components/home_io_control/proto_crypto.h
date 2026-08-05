@@ -18,6 +18,7 @@
 ///          of the installation relies entirely on keeping the system key secret.
 
 #include "proto_frame.h"
+#include "proto_sizes.h"
 
 namespace esphome {
 namespace home_io_control {
@@ -92,6 +93,15 @@ bool verify_hmac(const uint8_t *data, uint8_t len, const uint8_t hmac[HMAC_SIZE]
 /// @return true on success.
 bool crypt_key(const uint8_t *data, uint8_t len, const uint8_t challenge[HMAC_SIZE], const uint8_t in[AES_KEY_SIZE],
                uint8_t out[AES_KEY_SIZE]);
+
+/// Encrypt or decrypt a 1W install key using the public transfer key.
+///
+/// The IV is the 3-byte emitter Node ID repeated five times, followed by
+/// src[0]. Encryption and decryption are the same XOR operation.
+bool crypt_1w_install_key(
+    const uint8_t src[NODE_ID_SIZE],
+    const uint8_t input[AES_KEY_SIZE],
+    uint8_t output[AES_KEY_SIZE]);
 
 /// Generate 6 random bytes for a challenge using the ESP hardware RNG.
 /// @param out Output buffer (6 bytes).
