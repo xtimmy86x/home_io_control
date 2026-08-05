@@ -61,6 +61,10 @@ const char *command_name(uint8_t cmd) {
       return "CHALLENGE_RESP";
     case CMD_UNKNOWN_46:
       return "UNKNOWN_46";
+    case CMD_UNKNOWN_47:
+      return "UNKNOWN_47";
+    case CMD_UNKNOWN_4A:
+      return "UNKNOWN_4A";
     case CMD_GET_NAME:
       return "GET_NAME";
     case CMD_GET_NAME_RESP:

@@ -102,6 +102,8 @@ bool is_known_io_command(uint8_t cmd) {
     case CMD_CHALLENGE_REQ:
     case CMD_CHALLENGE_RESP:
     case CMD_UNKNOWN_46:
+    case CMD_UNKNOWN_47:
+    case CMD_UNKNOWN_4A:
 
     case CMD_GET_NAME:
     case CMD_GET_NAME_RESP:

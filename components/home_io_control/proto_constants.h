@@ -67,6 +67,8 @@ static constexpr uint8_t CMD_CHALLENGE_REQ = 0x3C;   ///< Device sends 6-byte ra
 static constexpr uint8_t CMD_CHALLENGE_RESP = 0x3D;  ///< Controller responds with HMAC proof
 
 static constexpr uint8_t CMD_UNKNOWN_46 = 0x46;  ///< Unknown command observed during controller transfer
+static constexpr uint8_t CMD_UNKNOWN_47 = 0x47;
+static constexpr uint8_t CMD_UNKNOWN_4A = 0x4A;
 
 // Device info commands
 static constexpr uint8_t CMD_GET_NAME = 0x50;        ///< Request device name
