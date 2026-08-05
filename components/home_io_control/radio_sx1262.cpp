@@ -407,11 +407,9 @@ void RadioSX1262::configure_radio_() {
   this->write_opcode_(SX1262_SET_PACKET_TYPE, &pkt_type, 1);
 
   // 8. Sniffer fixed on channel 3
-  this->set_frequency_register_(FREQ_CH2);
+  this->set_frequency_register_(FREQ_CH1);
   
-  ESP_LOGW(
-      TAG,
-      "SNIFFER FIXED CHANNEL: CH1 868.250 MHz");
+  ESP_LOGW(TAG, "SNIFFER FIXED CHANNEL: CH1 868.250 MHz");
 
   // 9. Calibrate image for 863-870 MHz band
   uint8_t cal_img[2] = {0xD7, 0xDB};
