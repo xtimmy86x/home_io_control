@@ -7,14 +7,53 @@
 
 #include "proto_crypto.h"
 
+#include "esphome/core/log.h"
+
 #include <esp_random.h>
+#include <cstdio>
 #include <cstring>
 
 namespace esphome {
 namespace home_io_control {
 namespace crypto {
 
+static const char *const TAG = "io_crypto_trace";
+
 namespace {
+
+#ifdef IOHOME_CRYPTO_TRACE
+
+template<size_t N>
+void bytes_to_hex(
+    const uint8_t *data,
+    size_t len,
+    char (&output)[N]) {
+  output[0] = '\0';
+
+  if (data == nullptr || len == 0)
+    return;
+
+  size_t offset = 0;
+
+  for (size_t i = 0; i < len; i++) {
+    if (offset + 4 > N)
+      break;
+
+    const int written = snprintf(
+        output + offset,
+        N - offset,
+        "%02X%s",
+        data[i],
+        i + 1 < len ? " " : "");
+
+    if (written <= 0)
+      break;
+
+    offset += static_cast<size_t>(written);
+  }
+}
+
+#endif
 
 // This is a small self-contained AES-128 implementation derived from the standard
 // Rijndael/AES algorithm as specified in FIPS-197. It was added here to avoid a
@@ -315,15 +354,72 @@ bool aes128_decrypt(const uint8_t in[AES_BLOCK_SIZE], const uint8_t key[AES_KEY_
 
 /// Create a 6-byte HMAC for authentication (proprietary IO-Homecontrol scheme).
 /// See proto_crypto.h for full parameter documentation and construction details.
-bool create_hmac(const uint8_t *data, uint8_t len, const uint8_t challenge[HMAC_SIZE], const uint8_t key[AES_KEY_SIZE],
-                 uint8_t hmac[HMAC_SIZE]) {
+bool create_hmac(
+    const uint8_t *data,
+    uint8_t len,
+    const uint8_t challenge[HMAC_SIZE],
+    const uint8_t key[AES_KEY_SIZE],
+    uint8_t hmac[HMAC_SIZE]) {
   uint8_t iv[IV_SIZE];
   construct_iv(data, len, challenge, iv);
+
   uint8_t encrypted[AES_BLOCK_SIZE];
-  if (!aes128_encrypt(iv, key, encrypted))
+
+  if (!aes128_encrypt(iv, key, encrypted)) {
+#ifdef IOHOME_CRYPTO_TRACE
+    ESP_LOGE(TAG, "AES-128 encryption failed");
+#endif
     return false;
-  // Truncate 16-byte AES output to 6 bytes.
+  }
+
+  // IO-Homecontrol uses the first 6 AES output bytes.
   memcpy(hmac, encrypted, HMAC_SIZE);
+
+#ifdef IOHOME_CRYPTO_TRACE
+  // Maximum useful data length is small, but reserve enough room for
+  // a complete diagnostic dump without logging the secret key.
+  char data_hex[97] = {0};
+  char challenge_hex[(HMAC_SIZE * 3) + 1] = {0};
+  char iv_hex[(IV_SIZE * 3) + 1] = {0};
+  char aes_hex[(AES_BLOCK_SIZE * 3) + 1] = {0};
+  char hmac_hex[(HMAC_SIZE * 3) + 1] = {0};
+
+  const size_t logged_data_len =
+      len > 32 ? 32 : static_cast<size_t>(len);
+
+  bytes_to_hex(data, logged_data_len, data_hex);
+  bytes_to_hex(challenge, HMAC_SIZE, challenge_hex);
+  bytes_to_hex(iv, IV_SIZE, iv_hex);
+  bytes_to_hex(encrypted, AES_BLOCK_SIZE, aes_hex);
+  bytes_to_hex(hmac, HMAC_SIZE, hmac_hex);
+
+  ESP_LOGI(
+      TAG,
+      "AUTH data_len=%u data=[%s]",
+      len,
+      data_hex);
+
+  ESP_LOGI(
+      TAG,
+      "AUTH challenge=[%s]",
+      challenge_hex);
+
+  ESP_LOGI(
+      TAG,
+      "AUTH iv=[%s]",
+      iv_hex);
+
+  ESP_LOGI(
+      TAG,
+      "AUTH aes=[%s]",
+      aes_hex);
+
+  ESP_LOGI(
+      TAG,
+      "AUTH hmac=[%s]",
+      hmac_hex);
+#endif
+
   return true;
 }
 
