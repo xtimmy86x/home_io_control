@@ -372,27 +372,6 @@ if (!aes128_encrypt(iv, key, encrypted)) {
   return false;
 }
 
-#ifdef IOHOME_CRYPTO_TRACE
-uint8_t reversed_key[AES_KEY_SIZE];
-uint8_t encrypted_reversed[AES_BLOCK_SIZE];
-
-for (uint8_t i = 0; i < AES_KEY_SIZE; i++) {
-  reversed_key[i] = key[AES_KEY_SIZE - 1 - i];
-}
-
-if (aes128_encrypt(iv, reversed_key, encrypted_reversed)) {
-  ESP_LOGI(
-      TAG,
-      "AUTH reversed_key_hmac=[%02X %02X %02X %02X %02X %02X]",
-      encrypted_reversed[0],
-      encrypted_reversed[1],
-      encrypted_reversed[2],
-      encrypted_reversed[3],
-      encrypted_reversed[4],
-      encrypted_reversed[5]);
-}
-#endif
-
   // IO-Homecontrol uses the first 6 AES output bytes.
 #ifdef IOHOME_USE_REVERSED_KEY
   uint8_t reversed_key[AES_KEY_SIZE];
